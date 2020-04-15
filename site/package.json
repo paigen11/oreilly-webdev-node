@@ -1,0 +1,29 @@
+{
+  "name": "oreilly-webdev-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "meadowlark.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node meadowlark.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paigen11/oreilly-webdev-node.git"
+  },
+  "keywords": [
+    "node",
+    "javascript",
+    "express"
+  ],
+  "author": "Paige Niedringhaus",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/paigen11/oreilly-webdev-node/issues"
+  },
+  "homepage": "https://github.com/paigen11/oreilly-webdev-node#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "express-handlebars": "^4.0.3"
+  }
+}
