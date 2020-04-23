@@ -1,5 +1,6 @@
 const express = require('express');
 const expressHandlebars = require('express-handlebars');
+const fortune = require('./lib/fortune'); // the ./ indicates to node not to look for this import in the node_modules folder
 
 const app = express();
 
@@ -14,34 +15,29 @@ app.set('view engine', 'handlebars');
 
 const port = process.env.PORT || 3000;
 
+app.use(express.static(__dirname + '/public'));
+
 // home page route
-app.get('/', (req, res) => {
-  // express convenience method - sets content-type header
-  res.type('text/plain');
-  // replaces Node's res.end()
-  res.send('Meadowlark Travel');
-});
+// renders home html view
+app.get('/', (req, res) => res.render('home'));
 
 // about page route
 app.get('/about', (req, res) => {
-  res.type('text/plain');
-  res.send('About Meadowlark Travel');
+  res.render('about', { fortune: fortune.getFortune() });
 });
 
 // custom 404
 // app.use is method by which Express adds middleware
 app.use((req, res) => {
-  res.type('text/plain');
-  // replaces Node's res.set & res.writeHead
   res.status(404);
-  res.send('404 - Not Found');
+  res.render('404');
 });
 
 // custom 500
 app.use((err, req, res, next) => {
   console.error(err.message);
-  res.type('text/plain');
-  res.send('500 - Server Error');
+  res.status(err.message);
+  res.render('500');
 });
 
 app.listen(port, () =>
