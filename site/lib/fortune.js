@@ -8,6 +8,6 @@ const fortuneCookies = [
 
 // exports is the Node way of exporting modules for use around the project
 exports.getFortune = () => {
-  const idx = fortunes[Math.floor(Math.random() * fortunes.length)];
+  const idx = Math.floor(Math.random() * fortuneCookies.length);
   return fortuneCookies[idx];
 };
