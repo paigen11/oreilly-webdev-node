@@ -1,8 +1,14 @@
 const express = require('express');
 const expressHandlebars = require('express-handlebars');
-const fortune = require('./lib/fortune'); // the ./ indicates to node not to look for this import in the node_modules folder
+const helmet = require('helmet');
+const handlers = require('./lib/handlers');
 
 const app = express();
+
+// prevents showing Express powers the app
+app.disable('x-powered-by');
+// adds more express security features
+app.use(helmet());
 
 // configure Handlebars view enginer
 app.engine(
@@ -19,30 +25,27 @@ app.use(express.static(__dirname + '/public'));
 
 // home page route
 // renders home html view
-app.get('/', (req, res) => res.render('home'));
+app.get('/', handlers.home);
 
 // about page route
-app.get('/about', (req, res) => {
-  res.render('about', { fortune: fortune.getFortune() });
-});
+app.get('/about', handlers.about);
 
 // custom 404
 // app.use is method by which Express adds middleware
-app.use((req, res) => {
-  res.status(404);
-  res.render('404');
-});
+app.use(handlers.notFound);
 
 // custom 500
-app.use((err, req, res, next) => {
-  console.error(err.message);
-  res.status(err.message);
-  res.render('500');
-});
+app.use(handlers.serverError);
 
-app.listen(port, () =>
-  console.log(
-    `Express started on http://localhost:${port}; ` +
-      `press Ctrl-C to terminate.`,
-  ),
-);
+// if you run a JS file directly with node, require.main will equal the global module,
+// otherwise it's being imported from another module
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(
+      `Express started on http://localhost:${port}; ` +
+        `press Ctrl-C to terminate.`,
+    );
+  });
+} else {
+  module.exports = app;
+}
