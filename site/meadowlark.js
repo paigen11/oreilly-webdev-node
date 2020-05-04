@@ -2,6 +2,7 @@ const express = require('express');
 const expressHandlebars = require('express-handlebars');
 const helmet = require('helmet');
 const handlers = require('./lib/handlers');
+const weatherMiddlware = require('./lib/middleware/weather');
 
 const app = express();
 
@@ -15,6 +16,14 @@ app.engine(
   'handlebars',
   expressHandlebars({
     defaultLayout: 'main',
+    // way to inject views in different parts of layout in express
+    helpers: {
+      section: (name, options) => {
+        if (!this._sections) this._sections = {};
+        this._sections[name] = options.fn(this);
+        return null;
+      },
+    },
   }),
 );
 app.set('view engine', 'handlebars');
@@ -22,6 +31,8 @@ app.set('view engine', 'handlebars');
 const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname + '/public'));
+
+app.use(weatherMiddlware);
 
 // home page route
 // renders home html view
