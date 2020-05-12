@@ -1,6 +1,7 @@
 const express = require('express');
 const expressHandlebars = require('express-handlebars');
 const helmet = require('helmet');
+const bodyParser = require('body-parser');
 const handlers = require('./lib/handlers');
 const weatherMiddlware = require('./lib/middleware/weather');
 
@@ -10,6 +11,9 @@ const app = express();
 app.disable('x-powered-by');
 // adds more express security features
 app.use(helmet());
+
+// makes req.body available to us
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // configure Handlebars view enginer
 app.engine(
