@@ -52,6 +52,11 @@ app.use(handlers.notFound);
 // custom 500
 app.use(handlers.serverError);
 
+// newsletter sign-up page, processing function, and thank you page
+app.get('/newsletter-signup', handlers.newsletterSignup);
+app.post('/newsletter-signup/process', handlers.newsletterSignupProcess);
+app.get('/newsletter-signup/thank-you', handlers.newsletterSignupThankYou);
+
 // if you run a JS file directly with node, require.main will equal the global module,
 // otherwise it's being imported from another module
 if (require.main === module) {
