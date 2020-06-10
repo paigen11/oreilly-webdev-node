@@ -8,6 +8,9 @@ const handlers = require('./lib/handlers');
 const weatherMiddlware = require('./lib/middleware/weather');
 const { credentials } = require('./config');
 
+const cookieParser = require('cookie-parser');
+app.use(cookieParser(credentials.cookieSecret));
+
 const app = express();
 
 // prevents showing Express powers the app
