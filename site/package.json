@@ -29,6 +29,7 @@
     "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
     "express-handlebars": "^4.0.3",
+    "express-session": "^1.17.1",
     "helmet": "^3.22.0",
     "multiparty": "^4.2.1"
   },
