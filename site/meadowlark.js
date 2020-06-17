@@ -2,14 +2,14 @@ const express = require('express');
 const expressHandlebars = require('express-handlebars');
 const helmet = require('helmet');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const expressSession = require('express-session');
 const multiparty = require('multiparty');
 
 const handlers = require('./lib/handlers');
 const weatherMiddlware = require('./lib/middleware/weather');
+const flashMiddleware = require('./lib/middleware/flash');
 const { credentials } = require('./config');
-
-const cookieParser = require('cookie-parser');
-app.use(cookieParser(credentials.cookieSecret));
 
 const app = express();
 
@@ -39,11 +39,42 @@ app.set('view engine', 'handlebars');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+app.use(cookieParser(credentials.cookieSecret));
+
+// to set the value of a cookie anywhere you have a response object
+// res.cookie('monster', 'nom nom');
+// res.cookie('signed_monster', 'nom nom', { signed: true });
+
+// to retreieve the value of a cookie anywhere you have a request object
+// const monster = req.cookies.monster;
+// const signedMonster = req.signedCookies.signed_monster;
+
+// to delete a cookie anywhere you have a response object
+// res.clearCookie('monster')
+
+// sessions are a more convenient way to maintain state in an application
+app.use(
+  expressSession({
+    resave: false,
+    saveUninitialized: false,
+    secret: credentials.cookieSecret,
+  }),
+);
+
+// to use sesssions, just use properties of the request object's session var
+// req.session.userName = 'anonymous';
+// const colorScheme = req.session.colorScheme || 'darkMode';
+
+// sessions don't have to use the request object for retrieving values and the response object for setting values
+// it's all on the request object
+// delete req.session.colorScheme;  // removes 'colorScheme' from the session
+
 const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname + '/public'));
 
 app.use(weatherMiddlware);
+app.use(flashMiddleware);
 
 // home page route
 // renders home html view
