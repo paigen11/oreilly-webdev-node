@@ -9,6 +9,8 @@ const multiparty = require('multiparty');
 const handlers = require('./lib/handlers');
 const weatherMiddlware = require('./lib/middleware/weather');
 const flashMiddleware = require('./lib/middleware/flash');
+const requiresWaiver = require('./lib/tourRequiresWaiver');
+const cartValidation = require('./lib/cartValidation');
 const { credentials } = require('./config');
 
 const app = express();
@@ -73,8 +75,13 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname + '/public'));
 
+// how to invoke middlewares set up elsewhere
 app.use(weatherMiddlware);
 app.use(flashMiddleware);
+app.use(requiresWaiver);
+app.use(cartValidation.resetValidation);
+app.use(cartValidation.checkWaivers);
+app.use(cartValidation.checkGuestCounts);
 
 // home page route
 // renders home html view
@@ -117,6 +124,7 @@ app.post('/api/vacation-photo-contest/:year/:month', (req, res) => {
 
 // custom 404
 // app.use is method by which Express adds middleware
+// middleware must be a function
 app.use(handlers.notFound);
 
 // custom 500
