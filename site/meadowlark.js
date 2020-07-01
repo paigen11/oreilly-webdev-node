@@ -12,6 +12,8 @@ const flashMiddleware = require('./lib/middleware/flash');
 const requiresWaiver = require('./lib/tourRequiresWaiver');
 const cartValidation = require('./lib/cartValidation');
 const { credentials } = require('./config');
+const emailService = require('./lib/email')(credentials);
+const email = require('./lib/email');
 
 const app = express();
 
@@ -62,6 +64,23 @@ app.use(
     secret: credentials.cookieSecret,
   }),
 );
+
+async function go() {
+  try {
+    const result = await emailService.send(
+      'email@gmail.com',
+      'Your Meadowlark Travel Tour',
+      '<img src="//meadowlarktravel.com/email/logo.png"  alt="Meadowlark Travel Logo">' +
+        '<p>Thank you for booking your trip with Meadowlark Travel.  ' +
+        'We look forward to your visit!</p>',
+    );
+    console.log('mail sent successfully: ', result);
+  } catch (err) {
+    console.log('could not send mail: ' + err.message);
+  }
+}
+
+// go();
 
 // to use sesssions, just use properties of the request object's session var
 // req.session.userName = 'anonymous';
@@ -120,6 +139,47 @@ app.post('/api/vacation-photo-contest/:year/:month', (req, res) => {
       return handlers.api.vacationPhotoContestError(req, res, err.message);
     handlers.api.vacationPhotoContest(req, res, fields, files);
   });
+});
+
+app.post('/cart/checkout', (req, res, next) => {
+  const cart = req.session.cart;
+  if (!cart) next(new Error('Cart does not exist.'));
+  const name = req.body.name || '',
+    email = req.body.email || '';
+  // input validation
+  if (!email.match(VALID_EMAIL_REGEX))
+    return res.next(new Error('Invalid email address.'));
+  // assign a random cart ID; normally we would use a database ID here
+  cart.number = Math.random()
+    .toString()
+    .replace(/^0\.0*/, '');
+  cart.billing = {
+    name: name,
+    email: email,
+  };
+  res.render(
+    'email/cart-thank-you',
+    { layout: null, cart: cart },
+    (err, html) => {
+      console.log('rendered email: ', html);
+      if (err) console.log('error in email template');
+      mailTransport
+        .sendMail({
+          from: '"Meadowlark Travel": info@meadowlarktravel.com',
+          to: cart.billing.email,
+          subject: 'Thank You for Book your Trip with Meadowlark Travel',
+          html: html,
+          text: htmlToFormattedText(html),
+        })
+        .then((info) => {
+          console.log('sent! ', info);
+          res.render('cart-thank-you', { cart: cart });
+        })
+        .catch((err) => {
+          console.error('Unable to send confirmation: ' + err.message);
+        });
+    },
+  );
 });
 
 // custom 404
