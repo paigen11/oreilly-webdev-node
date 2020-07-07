@@ -7,7 +7,9 @@
     "test": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint meadowlark.js lib",
-    "dev": "node meadowlark.js"
+    "dev": "node meadowlark.js",
+    "cluster": "node meadowlark-cluster.js",
+    "stress": "artillery quick --count 10 -n 20 http://localhost:3000/"
   },
   "repository": {
     "type": "git",
@@ -26,15 +28,21 @@
   "homepage": "https://github.com/paigen11/oreilly-webdev-node#readme",
   "dependencies": {
     "@sendgrid/mail": "^7.2.1",
+    "artillery": "^1.6.1",
     "body-parser": "^1.19.0",
+    "connect-redis": "^4.0.4",
     "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
     "express-handlebars": "^4.0.3",
     "express-session": "^1.17.1",
     "helmet": "^3.22.0",
     "html-to-formatted-text": "^2.7.0",
+    "lodash": "^4.17.15",
+    "mongoose": "^5.9.22",
+    "morgan": "^1.10.0",
     "multiparty": "^4.2.1",
-    "nodemailer": "^6.4.10"
+    "nodemailer": "^6.4.10",
+    "pg": "^8.2.2"
   },
   "devDependencies": {
     "eslint": "^6.8.0",

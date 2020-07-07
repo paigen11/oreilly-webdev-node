@@ -5,6 +5,10 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
 const multiparty = require('multiparty');
+const morgan = require('morgan');
+const fs = require('fs');
+const cluster = require('cluster');
+const expressSession = require('express-session');
 
 const handlers = require('./lib/handlers');
 const weatherMiddlware = require('./lib/middleware/weather');
@@ -15,7 +19,21 @@ const { credentials } = require('./config');
 const emailService = require('./lib/email')(credentials);
 const email = require('./lib/email');
 
+require('./db');
+
 const app = express();
+
+switch (app.get('env')) {
+  case 'development':
+    app.use(morgan('dev'));
+    break;
+  case 'production':
+    const stream = fs.createWriteStream(__dirname + '/access.log', {
+      flags: 'a',
+    });
+    app.use(morgan('combined', { stream }));
+    break;
+}
 
 // prevents showing Express powers the app
 app.disable('x-powered-by');
@@ -43,7 +61,19 @@ app.set('view engine', 'handlebars');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+const RedisStore = require('connect-redis')(expressSession);
 app.use(cookieParser(credentials.cookieSecret));
+app.use(
+  expressSession({
+    resave: false,
+    saveUninitialized: false,
+    secret: credentials.cookieSecret,
+    store: new RedisStore({
+      url: credentials.redis.url,
+      logErrors: true, // highly recommended!
+    }),
+  }),
+);
 
 // to set the value of a cookie anywhere you have a response object
 // res.cookie('monster', 'nom nom');
@@ -182,6 +212,41 @@ app.post('/cart/checkout', (req, res, next) => {
   );
 });
 
+app.get('/vacations', handlers.listVacations);
+
+app.get('/set-currency/:currency', handlers.setCurrency);
+
+app.use((req, res, next) => {
+  if (cluster.isWorker)
+    console.log(`Worker ${cluster.worker.id} received request`);
+  next();
+});
+
+// uncaught exception handling
+app.get('/fail', (req, res) => {
+  throw new Error('Nope!');
+});
+
+app.get('/epic-fail', (req, res) => {
+  process.nextTick(() => {
+    throw new Error('Kaboom!');
+  });
+  res.send('embarrassed');
+});
+
+app.get('*', (req, res) => res.send('online'));
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION\n', err.stack);
+  // do any cleanup you need to do here...close
+  // database connections, etc.  you'll probably
+  // also want to notify your operations team
+  // that a critical error occurred; you can use
+  // email or even better a service like Sentry,
+  // Rollbar, or New Relic
+  process.exit(1);
+});
+
 // custom 404
 // app.use is method by which Express adds middleware
 // middleware must be a function
@@ -190,15 +255,22 @@ app.use(handlers.notFound);
 // custom 500
 app.use(handlers.serverError);
 
+function startServer(port) {
+  app.listen(port, () => {
+    console.log(
+      `Express started in ${app.get(
+        'env',
+      )} mode at http://localhost:${port}; ` + `press Ctrl-C to terminate.`,
+    );
+  });
+}
 // if you run a JS file directly with node, require.main will equal the global module,
 // otherwise it's being imported from another module
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(
-      `Express started on http://localhost:${port}; ` +
-        `press Ctrl-C to terminate.`,
-    );
-  });
+  // app run directly; start app server
+  startServer(process.env.PORT || 3000);
 } else {
-  module.exports = app;
+  // app imported as a module via 'require' export
+  // function to create server
+  module.exports = startServer;
 }
