@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
-const multiparty = require('multiparty');
+
 const morgan = require('morgan');
 const fs = require('fs');
 const cluster = require('cluster');
@@ -18,10 +18,16 @@ const cartValidation = require('./lib/cartValidation');
 const { credentials } = require('./config');
 const emailService = require('./lib/email')(credentials);
 const email = require('./lib/email');
+const cors = require(cors);
 
+// bringing in mongodb
 require('./db');
 
 const app = express();
+
+// bringing in routes
+const addRoutes = require('./routes');
+addRoutes(app);
 
 switch (app.get('env')) {
   case 'development':
@@ -120,8 +126,6 @@ async function go() {
 // it's all on the request object
 // delete req.session.colorScheme;  // removes 'colorScheme' from the session
 
-const port = process.env.PORT || 3000;
-
 app.use(express.static(__dirname + '/public'));
 
 // how to invoke middlewares set up elsewhere
@@ -132,89 +136,15 @@ app.use(cartValidation.resetValidation);
 app.use(cartValidation.checkWaivers);
 app.use(cartValidation.checkGuestCounts);
 
-// home page route
-// renders home html view
-app.get('/', handlers.home);
+app.use('/api', cors());
 
-// about page route
-app.get('/about', handlers.about);
-
-// newsletter sign-up page, processing function, and thank you page
-app.get('/newsletter-signup', handlers.newsletterSignup);
-app.post('/newsletter-signup/process', handlers.newsletterSignupProcess);
-app.get('/newsletter-signup/thank-you', handlers.newsletterSignupThankYou);
-
-// handlers for fetch/JSON form submission
-app.get('/newsletter', handlers.newsletter);
-app.post('/api/newsletter-signup', handlers.api.newsletterSignup);
-
-// vacation photo contest
-app.get('/contest/vacation-photo', handlers.vacationPhotoContest);
-app.get('/contest/vacation-photo-ajax', handlers.vacationPhotoContestAjax);
-app.post('/contest/vacation-photo/:year/:month', (req, res) => {
-  const form = new multiparty.Form();
-  form.parse(req, (err, fields, files) => {
-    if (err) return res.status(500).send({ error: err.message });
-    handlers.vacationPhotoContestProcess(req, res, fields, files);
-  });
-});
-app.get(
-  '/contest/vacation-photo-thank-you',
-  handlers.vacationPhotoContestProcessThankYou,
+app.get('/api/vacations', handlers.getVacationsApi);
+app.get('/api/vacation/:sku', handlers.getVacationBySkuApi);
+app.post(
+  '/api/vacation/:sku/notify-when-in-season',
+  handlers.addVacationInSeasonListenerApi,
 );
-app.post('/api/vacation-photo-contest/:year/:month', (req, res) => {
-  const form = new multiparty.Form();
-  form.parse(req, (err, fields, files) => {
-    if (err)
-      return handlers.api.vacationPhotoContestError(req, res, err.message);
-    handlers.api.vacationPhotoContest(req, res, fields, files);
-  });
-});
-
-app.post('/cart/checkout', (req, res, next) => {
-  const cart = req.session.cart;
-  if (!cart) next(new Error('Cart does not exist.'));
-  const name = req.body.name || '',
-    email = req.body.email || '';
-  // input validation
-  if (!email.match(VALID_EMAIL_REGEX))
-    return res.next(new Error('Invalid email address.'));
-  // assign a random cart ID; normally we would use a database ID here
-  cart.number = Math.random()
-    .toString()
-    .replace(/^0\.0*/, '');
-  cart.billing = {
-    name: name,
-    email: email,
-  };
-  res.render(
-    'email/cart-thank-you',
-    { layout: null, cart: cart },
-    (err, html) => {
-      console.log('rendered email: ', html);
-      if (err) console.log('error in email template');
-      mailTransport
-        .sendMail({
-          from: '"Meadowlark Travel": info@meadowlarktravel.com',
-          to: cart.billing.email,
-          subject: 'Thank You for Book your Trip with Meadowlark Travel',
-          html: html,
-          text: htmlToFormattedText(html),
-        })
-        .then((info) => {
-          console.log('sent! ', info);
-          res.render('cart-thank-you', { cart: cart });
-        })
-        .catch((err) => {
-          console.error('Unable to send confirmation: ' + err.message);
-        });
-    },
-  );
-});
-
-app.get('/vacations', handlers.listVacations);
-
-app.get('/set-currency/:currency', handlers.setCurrency);
+app.delete('/api/vacation/:sku', handlers.requestDeleteVacationApi);
 
 app.use((req, res, next) => {
   if (cluster.isWorker)
@@ -268,7 +198,7 @@ function startServer(port) {
 // otherwise it's being imported from another module
 if (require.main === module) {
   // app run directly; start app server
-  startServer(process.env.PORT || 3000);
+  startServer(process.env.PORT || 3033);
 } else {
   // app imported as a module via 'require' export
   // function to create server
