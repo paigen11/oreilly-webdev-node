@@ -4,13 +4,14 @@ const helmet = require('helmet');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const expressSession = require('express-session');
+const csrf = require('csurf');
 
 const morgan = require('morgan');
 const fs = require('fs');
 const cluster = require('cluster');
-const expressSession = require('express-session');
+const https = require('https');
 
-const handlers = require('./lib/handlers');
+const handlers = require('./lib/handlers/main');
 const weatherMiddlware = require('./lib/middleware/weather');
 const flashMiddleware = require('./lib/middleware/flash');
 const requiresWaiver = require('./lib/tourRequiresWaiver');
@@ -18,7 +19,7 @@ const cartValidation = require('./lib/cartValidation');
 const { credentials } = require('./config');
 const emailService = require('./lib/email')(credentials);
 const email = require('./lib/email');
-const cors = require(cors);
+const cors = require('cors');
 
 // bringing in mongodb
 require('./db');
@@ -185,8 +186,13 @@ app.use(handlers.notFound);
 // custom 500
 app.use(handlers.serverError);
 
+const options = {
+  key: fs.readFileSync(__dirname + '/ssl/meadowlark.pem'),
+  cert: fs.readFileSync(__dirname + '/ssl/meadowlark.crt'),
+};
+
 function startServer(port) {
-  app.listen(port, () => {
+  https.createServer(options, app).listen(port, () => {
     console.log(
       `Express started in ${app.get(
         'env',

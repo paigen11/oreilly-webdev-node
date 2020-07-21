@@ -1,4 +1,4 @@
-const fortune = require('./fortune');
+const fortune = require('./main');
 
 exports.home = (req, res) => res.render('home');
 
