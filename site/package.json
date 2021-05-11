@@ -39,7 +39,7 @@
     "express-session": "^1.17.1",
     "helmet": "^3.22.0",
     "html-to-formatted-text": "^2.7.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "mongoose": "^5.9.22",
     "morgan": "^1.10.0",
     "multiparty": "^4.2.1",
